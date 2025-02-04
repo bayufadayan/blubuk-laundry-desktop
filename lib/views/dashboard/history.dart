@@ -1,7 +1,7 @@
 // ignore_for_file: avoid_unnecessary_containers
 
 import 'dart:convert';
-import 'package:app_laundry_bismillah/customer_info.dart';
+import 'package:app_laundry_bismillah/views/dashboard/customer_info.dart';
 import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
 import 'package:http/http.dart' as http;

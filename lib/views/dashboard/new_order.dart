@@ -1,7 +1,7 @@
 // ignore_for_file: unused_import, prefer_const_constructors
 
-import 'package:app_laundry_bismillah/customer_info.dart';
-import 'package:app_laundry_bismillah/history.dart';
+import 'package:app_laundry_bismillah/views/dashboard/customer_info.dart';
+import 'package:app_laundry_bismillah/views/dashboard/history.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:app_laundry_bismillah/main.dart';
