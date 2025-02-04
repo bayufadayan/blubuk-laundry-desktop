@@ -17,14 +17,12 @@ abstract class LaundryItem {
     required this.hargaExpress,
   });
 
-  // Convert JSON dari API ke object LaundryItem
   factory LaundryItem.fromJson(Map<String, dynamic> json) {
     return json['category'] == "satuan"
         ? SatuanLaundry.fromJson(json)
         : KiloanLaundry.fromJson(json);
   }
 
-  // Convert object LaundryItem ke JSON buat dikirim ke API
   Map<String, dynamic> toJson();
 }
 

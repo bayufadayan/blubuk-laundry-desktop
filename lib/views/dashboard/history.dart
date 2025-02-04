@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'package:app_laundry_bismillah/views/dashboard/customer_info.dart';
+import 'package:app_laundry_bismillah/views/dashboard/dashboard.dart';
 import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
 import 'package:http/http.dart' as http;
@@ -139,7 +140,7 @@ class ItemList extends StatelessWidget {
                   onTap: () {
                     // deletedata();
                     Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => const MyApp()));
+                        MaterialPageRoute(builder: (context) => const Dashboard()));
                   },
                   child: const Icon(
                     Icons.home,

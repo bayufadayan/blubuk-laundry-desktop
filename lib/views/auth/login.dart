@@ -1,9 +1,11 @@
-import 'package:app_laundry_bismillah/views/dashboard/customer_info.dart';
 import 'package:app_laundry_bismillah/views/auth/register.dart';
-import 'package:app_laundry_bismillah/widgets/mybutton.dart';
+import 'package:app_laundry_bismillah/views/dashboard/dashboard.dart';
 import 'package:app_laundry_bismillah/widgets/myfunction_button.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -14,6 +16,44 @@ class Login extends StatefulWidget {
 
 class _LoginState extends State<Login> {
   bool _isPasswordHidden = true;
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  String _errorMessage = '';
+
+  Future<void> _login() async {
+    final response = await http.post(
+      Uri.parse('http://localhost:8080/blubuklaundry/login.php'),
+      body: jsonEncode({
+        'email': _emailController.text,
+        'password': _passwordController.text,
+      }),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    final responseData = jsonDecode(response.body);
+
+    if (responseData['status'] == 'success') {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+      await prefs.setString('adminData', jsonEncode(responseData['admin']));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Login Berhasil!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => Dashboard()),
+      );
+    } else {
+      setState(() {
+        _errorMessage = responseData['message'];
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,6 +106,41 @@ class _LoginState extends State<Login> {
                       height: 200,
                       color: Colors.transparent,
                       child: Column(children: <Widget>[
+                        if (_errorMessage.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 10, horizontal: 20),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors
+                                    .red.shade100, // Background merah muda
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color: Colors.red.shade400, width: 1.5),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.error,
+                                      color: Colors.red, size: 20),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _errorMessage,
+                                      style: const TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 14,
+                                        fontWeight:
+                                            FontWeight.w600, // Teks lebih tegas
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         Container(
                           alignment: Alignment.topLeft,
                           padding: const EdgeInsets.only(left: 24),
@@ -84,6 +159,7 @@ class _LoginState extends State<Login> {
                             borderRadius: BorderRadius.circular(5),
                           ),
                           child: TextField(
+                              controller: _emailController,
                               style: GoogleFonts.roboto(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
@@ -117,7 +193,7 @@ class _LoginState extends State<Login> {
                             borderRadius: BorderRadius.circular(5),
                           ),
                           child: TextField(
-                            // controller: _passwordController,
+                            controller: _passwordController,
                             obscureText: _isPasswordHidden,
                             style: GoogleFonts.roboto(
                               fontSize: 16,
@@ -149,7 +225,10 @@ class _LoginState extends State<Login> {
                         ),
                       ]),
                     ),
-                    MyFunctionButton(text: "Login", onPressed: () {}),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    MyFunctionButton(text: "Login", onPressed: _login),
                     const Padding(padding: EdgeInsets.only(top: 5)),
                     Builder(builder: (context) {
                       return InkWell(
