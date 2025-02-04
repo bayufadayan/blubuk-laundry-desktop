@@ -12,7 +12,7 @@ class History extends StatelessWidget {
 
   Future<List> getData() async {
     final response =
-        await http.get(Uri.parse('http://localhost/blubuklaundry/getdata.php'));
+        await http.get(Uri.parse('http://localhost:8080/blubuklaundry/getdata.php'));
     return json.decode(response.body);
   }
 
@@ -61,7 +61,7 @@ class ItemList extends StatelessWidget {
   const ItemList({super.key, required this.list});
 
   // void deletedata() {
-  //   var url = "http://localhost/blubuklaundry/deleteData.php";
+  //   var url = "http://localhost:8080/blubuklaundry/deleteData.php";
   //   var widget;
   //   http.post(Uri.parse(url),
   //       body: {'invoice': widget.list[widget.index]['invoice']});
