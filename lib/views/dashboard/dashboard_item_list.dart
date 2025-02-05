@@ -1,4 +1,5 @@
 import 'package:app_laundry_bismillah/views/dashboard/admin_list.dart';
+import 'package:app_laundry_bismillah/views/dashboard/myprofile.dart';
 import 'package:flutter/material.dart';
 import 'package:app_laundry_bismillah/utils/session_manager.dart';
 import 'package:app_laundry_bismillah/views/auth/login.dart';
@@ -45,6 +46,6 @@ List<Function(BuildContext)> functions = [
   (context) => showMessage("Antri"),
   (context) => showMessage("Lihat daftar"),
   (context) => nagigatePageTo(context, AdminList()),
-  (context) => showMessage("Profil"),
+  (context) => nagigatePageTo(context, MyProfile()),
   (context) => logout(context),
 ];
