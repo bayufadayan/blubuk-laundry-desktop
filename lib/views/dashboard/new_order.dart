@@ -1,11 +1,10 @@
 // ignore_for_file: unused_import, prefer_const_constructors
 
-import 'package:app_laundry_bismillah/customer_info.dart';
-import 'package:app_laundry_bismillah/history.dart';
+import 'package:app_laundry_bismillah/views/dashboard/customer_info.dart';
+import 'package:app_laundry_bismillah/views/dashboard/history.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:app_laundry_bismillah/main.dart';
-// ignore: depend_on_referenced_packages
 import 'package:http/http.dart' as http;
 
 class NewOrder extends StatefulWidget {
@@ -25,7 +24,7 @@ class _NewOrderState extends State<NewOrder> {
   TextEditingController controllerHargaPokok = TextEditingController();
 
   void addData() {
-    var url = "http://localhost/blubuklaundry/adddata.php";
+    var url = "http://localhost:8080/blubuklaundry/adddata.php";
 
     http.post(Uri.parse(url), body: {
       "waktu": controllerWaktu.text,

@@ -1,7 +1,8 @@
 // ignore_for_file: avoid_unnecessary_containers
 
 import 'dart:convert';
-import 'package:app_laundry_bismillah/customer_info.dart';
+import 'package:app_laundry_bismillah/views/dashboard/customer_info.dart';
+import 'package:app_laundry_bismillah/views/dashboard/dashboard.dart';
 import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
 import 'package:http/http.dart' as http;
@@ -12,7 +13,7 @@ class History extends StatelessWidget {
 
   Future<List> getData() async {
     final response =
-        await http.get(Uri.parse('http://localhost/blubuklaundry/getdata.php'));
+        await http.get(Uri.parse('http://localhost:8080/blubuklaundry/getdata.php'));
     return json.decode(response.body);
   }
 
@@ -61,7 +62,7 @@ class ItemList extends StatelessWidget {
   const ItemList({super.key, required this.list});
 
   // void deletedata() {
-  //   var url = "http://localhost/blubuklaundry/deleteData.php";
+  //   var url = "http://localhost:8080/blubuklaundry/deleteData.php";
   //   var widget;
   //   http.post(Uri.parse(url),
   //       body: {'invoice': widget.list[widget.index]['invoice']});
@@ -139,7 +140,7 @@ class ItemList extends StatelessWidget {
                   onTap: () {
                     // deletedata();
                     Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => const MyApp()));
+                        MaterialPageRoute(builder: (context) => const Dashboard()));
                   },
                   child: const Icon(
                     Icons.home,
