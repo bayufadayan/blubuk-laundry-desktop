@@ -1,4 +1,5 @@
-import 'package:app_laundry_bismillah/views/auth/login.dart';
+import 'package:app_laundry_bismillah/views/dashboard/admin_list.dart';
+import 'package:app_laundry_bismillah/widgets/myappbar.dart';
 import 'package:app_laundry_bismillah/widgets/myfunction_button.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,14 +8,14 @@ import 'dart:convert';
 
 void main(List<String> args) {}
 
-class Register extends StatefulWidget {
-  const Register({super.key});
+class AdminAddNew extends StatefulWidget {
+  const AdminAddNew({super.key});
 
   @override
-  State<Register> createState() => _RegisterState();
+  State<AdminAddNew> createState() => _AdminAddNewState();
 }
 
-class _RegisterState extends State<Register> {
+class _AdminAddNewState extends State<AdminAddNew> {
   bool _isPasswordHidden = true;
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
@@ -74,7 +75,7 @@ class _RegisterState extends State<Register> {
         Future.delayed(const Duration(seconds: 2), () {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => Login()),
+            MaterialPageRoute(builder: (context) => AdminList()),
           );
         });
       } else {
@@ -88,6 +89,7 @@ class _RegisterState extends State<Register> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: MyAppBar(isGetBack: true),
       body: Stack(
         children: <Widget>[
           //background
@@ -102,7 +104,6 @@ class _RegisterState extends State<Register> {
             ),
           ),
 
-          //registerpage
           SingleChildScrollView(
               child: Form(
             key: _formKey,
@@ -112,7 +113,7 @@ class _RegisterState extends State<Register> {
                 const Padding(padding: EdgeInsets.only(top: 20)),
                 Center(
                   child: Text(
-                    'Daftar Akun  ',
+                    'Tambah Admin Baru  ',
                     style: GoogleFonts.openSans(
                         fontWeight: FontWeight.w700, fontSize: 30),
                   ),
@@ -120,7 +121,7 @@ class _RegisterState extends State<Register> {
                 const Padding(padding: EdgeInsets.only(top: 10)),
                 Container(
                   width: 440,
-                  height: 600,
+                  height: 570,
                   decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(17),
                       gradient: const LinearGradient(
@@ -419,28 +420,9 @@ class _RegisterState extends State<Register> {
                           ),
                           const Padding(padding: EdgeInsets.only(top: 20)),
                           MyFunctionButton(
-                              text: "Sign Up", onPressed: _register),
+                              text: "Daftarkan Admin Baru",
+                              onPressed: _register),
                           const Padding(padding: EdgeInsets.only(top: 5)),
-                          Builder(builder: (context) {
-                            return InkWell(
-                              onTap: () {
-                                Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => const Login()));
-                              },
-                              child: Text(
-                                'Sudah punya akun? Masuk disini',
-                                style: GoogleFonts.roboto(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  textStyle: const TextStyle(
-                                    color: Color.fromARGB(255, 6, 49, 85),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }),
                         ]),
                       ),
                     ],

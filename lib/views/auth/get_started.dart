@@ -26,8 +26,12 @@ class GetStartedScreen extends StatelessWidget {
         ),
         Container(
           width: double.infinity,
+          height: double.infinity,
           alignment: Alignment.bottomCenter,
-          child: Image.asset("images/bubble.png"),
+          child: Image.asset(
+            "images/bubble.png",
+            fit: BoxFit.cover,
+          ),
         ),
         Container(
           alignment: Alignment.center,
@@ -37,6 +41,7 @@ class GetStartedScreen extends StatelessWidget {
               children: <Widget>[
                 const Padding(padding: EdgeInsets.only(top: 170)),
                 Image.asset("images/blubuk_logo.png", width: 180, height: 180),
+                // Image.asset("images/blubuk 2.0.png", width: 300, height: 300),
                 const Padding(padding: EdgeInsets.only(top: 5.0)),
                 Text(
                   "BLUBUK",

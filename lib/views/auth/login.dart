@@ -64,12 +64,15 @@ class _LoginState extends State<Login> {
           Container(color: const Color.fromARGB(255, 252, 230, 169)),
           //wallpaper
 
-          Container(
-            alignment: Alignment.center,
+          SizedBox(
+            width: double.infinity,
+            height: double.infinity,
             child: Image.asset(
               "images/first_pattern.png",
+              fit: BoxFit.cover,
             ),
           ),
+
           //content login
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
