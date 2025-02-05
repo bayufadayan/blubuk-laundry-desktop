@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:app_laundry_bismillah/views/dashboard/admin_add_new.dart';
+import 'package:app_laundry_bismillah/widgets/myappbar.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pluto_grid/pluto_grid.dart';
@@ -215,15 +216,7 @@ class _AdminListState extends State<AdminList> {
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Daftar Admin"),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-      ),
+      appBar: MyAppBar(isGetBack: true),
       body: Padding(
         padding: EdgeInsets.only(top: 30, left: 20, right: 20, bottom: 30),
         child: Column(
