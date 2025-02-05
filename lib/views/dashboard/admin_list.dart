@@ -50,7 +50,7 @@ class _AdminListState extends State<AdminList> {
               'no': PlutoCell(value: (index + 1).toString()),
               'id': PlutoCell(value: admin['id']?.toString() ?? ''),
               'nama': PlutoCell(value: admin['name'] ?? ''),
-              'phone': PlutoCell(value: admin['phone_number'] ?? ''),
+              'phone_number': PlutoCell(value: admin['phone_number'] ?? ''),
               'email': PlutoCell(value: admin['email'] ?? ''),
               'alamat': PlutoCell(value: admin['address'] ?? ''),
               'aksi': PlutoCell(value: ''),
@@ -144,7 +144,7 @@ class _AdminListState extends State<AdminList> {
       ),
       PlutoColumn(
         title: 'Phone Number',
-        field: 'phone',
+        field: 'phone_number',
         type: PlutoColumnType.text(),
         width: 155,
       ),
@@ -197,7 +197,7 @@ class _AdminListState extends State<AdminList> {
               ElevatedButton(
                 onPressed: () {
                   final row = rendererContext.row;
-                  launchWhatsApp(row.cells['phone']?.value);
+                  launchWhatsApp(row.cells['phone_number']?.value);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 54, 185, 2),
@@ -278,16 +278,16 @@ class _AdminListState extends State<AdminList> {
                         final updatedData = {
                           'name': row.cells['nama']?.value?.toString() ?? '',
                           'phone_number':
-                              row.cells['phone']?.value?.toString() ?? '',
+                              row.cells['phone_number']?.value?.toString() ?? '',
                           'email': row.cells['email']?.value?.toString() ?? '',
                           'address':
                               row.cells['alamat']?.value?.toString() ?? '',
                         };
 
-                        final noValue = row.cells['no']?.value;
-                        if (noValue != null) {
+                        final idValue = row.cells['id']?.value;
+                        if (idValue != null) {
                           updateData(
-                              int.parse(noValue.toString()), updatedData);
+                              int.parse(idValue.toString()), updatedData);
                         }
                       },
                       configuration: PlutoGridConfiguration(
