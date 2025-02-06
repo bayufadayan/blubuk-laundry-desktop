@@ -36,6 +36,7 @@ class _LoginState extends State<Login> {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isLoggedIn', true);
       await prefs.setString('adminData', jsonEncode(responseData['admin']));
+      print(responseData);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -63,7 +64,6 @@ class _LoginState extends State<Login> {
           //background color
           Container(color: const Color.fromARGB(255, 252, 230, 169)),
           //wallpaper
-
           SizedBox(
             width: double.infinity,
             height: double.infinity,
@@ -118,7 +118,7 @@ class _LoginState extends State<Login> {
                                   horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
                                 color: Colors
-                                    .red.shade100, // Background merah muda
+                                    .red.shade100,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                     color: Colors.red.shade400, width: 1.5),

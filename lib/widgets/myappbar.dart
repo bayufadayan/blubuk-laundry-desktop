@@ -1,3 +1,4 @@
+import 'package:app_laundry_bismillah/views/dashboard/dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,6 +44,19 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
             )
           : null,
       actions: [
+        IconButton(
+          icon: Icon(Icons.home),
+          onPressed: () {
+            Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Dashboard(),
+                ));
+          },
+        ),
+        SizedBox(
+          width: 10,
+        ),
         Padding(
           padding: const EdgeInsets.only(right: 20, top: 8, bottom: 8),
           child: FutureBuilder<Map<String, dynamic>?>(

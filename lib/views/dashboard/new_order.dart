@@ -2,6 +2,7 @@
 
 import 'package:app_laundry_bismillah/views/dashboard/customer_info.dart';
 import 'package:app_laundry_bismillah/views/dashboard/history.dart';
+import 'package:app_laundry_bismillah/widgets/myappbar.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:app_laundry_bismillah/main.dart';
@@ -39,8 +40,8 @@ class _NewOrderState extends State<NewOrder> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-        home: Scaffold(
+    return Scaffold(
+      appBar: MyAppBar(isGetBack: true),
       body: Stack(
         children: <Widget>[
           //bg
@@ -51,53 +52,14 @@ class _NewOrderState extends State<NewOrder> {
               Color.fromARGB(255, 252, 239, 249),
             ])),
           ),
-          Container(
+          SizedBox(
             width: double.infinity,
-            alignment: Alignment.bottomCenter,
-            child: Image.asset("images/second_pattern.png"),
+            height: double.infinity,
+            child: Image.asset(
+              "images/second_pattern.png",
+              fit: BoxFit.cover,
+            ),
           ),
-          //app Bar
-          Container(
-              width: double.infinity,
-              height: 67,
-              decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: const <Color>[
-                        Color.fromRGBO(119, 191, 242, 1),
-                        Color.fromRGBO(212, 231, 244, 1),
-                      ]),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.grey.withOpacity(0.5),
-                        spreadRadius: 5,
-                        blurRadius: 7)
-                  ]),
-              child: Row(children: <Widget>[
-                Padding(padding: EdgeInsets.only(left: 20)),
-                Builder(builder: (context) {
-                  return InkWell(
-                    onTap: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const CustomerInfo()));
-                    },
-                    child: Image.asset(
-                      "images/icon_back.png",
-                      width: 34,
-                      height: 34,
-                    ),
-                  );
-                }),
-                Padding(padding: EdgeInsets.only(left: 13)),
-                Text('New Order',
-                    style: GoogleFonts.openSans(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        textStyle: TextStyle(letterSpacing: 3.0)))
-              ])),
           Container(
             padding: EdgeInsets.only(top: 130),
             alignment: Alignment.topCenter,
@@ -416,6 +378,6 @@ class _NewOrderState extends State<NewOrder> {
           ),
         ],
       ),
-    ));
+    );
   }
 }
