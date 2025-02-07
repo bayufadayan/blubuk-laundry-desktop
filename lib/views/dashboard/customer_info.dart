@@ -19,7 +19,7 @@ class _CustomerInfoState extends State<CustomerInfo> {
   String? selectedCustomerId;
   TextEditingController nameController = TextEditingController();
   TextEditingController phoneController = TextEditingController();
-  bool isNewCustomer = false;
+  bool isNewCustomer = true;
   String? selectedItem;
 
   @override
@@ -43,21 +43,38 @@ class _CustomerInfoState extends State<CustomerInfo> {
     }
   }
 
-  Future<String?> createCustomer() async {
+  Future<String?> createCustomer(BuildContext context) async {
     try {
       var response = await http.post(
-        Uri.parse('http://localhost:8080/blubuklaundry/createCustomer.php'),
+        Uri.parse('http://localhost:8080/blubuklaundry/addCustomerData.php'),
         body: {
           'name': nameController.text,
           'phone_number': phoneController.text,
         },
       );
+
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
-        return data['id'].toString();
+        print("ini data: $data");
+        if (data['status'] == 'error') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(data['message']),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return null;
+        }
+        return data['data']['id'].toString();
       }
     } catch (e) {
       print('Error creating customer: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Terjadi kesalahan saat membuat customer.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
     return null;
   }
@@ -65,14 +82,13 @@ class _CustomerInfoState extends State<CustomerInfo> {
   void onNextPressed() async {
     String? customerId = selectedCustomerId;
     if (isNewCustomer) {
-      customerId = await createCustomer();
+      customerId = await createCustomer(context);
     }
     if (customerId != null) {
       Navigator.push(
         context,
         MaterialPageRoute(
-            // builder: (context) => NewOrder(customerId: customerId)),
-            builder: (context) => NewOrder()),
+            builder: (context) => NewOrder(customerId: customerId!)),
       );
     }
   }
@@ -193,7 +209,8 @@ class _CustomerInfoState extends State<CustomerInfo> {
                                               MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
-                                              selectedItem ?? "Cari Customer",
+                                              selectedItem ??
+                                                  "Pilih/Cari Nama atau No.Telp",
                                               style: TextStyle(
                                                 fontWeight: FontWeight.bold,
                                                 color: selectedItem != null
@@ -202,14 +219,39 @@ class _CustomerInfoState extends State<CustomerInfo> {
                                               ),
                                             ),
                                             if (selectedItem != null)
-                                              IconButton(
-                                                icon: Icon(Icons.clear,
-                                                    color: Colors.red),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    this.selectedItem = null;
-                                                  });
-                                                },
+                                              Container(
+                                                width: 30,
+                                                height: 30,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.red.withOpacity(
+                                                      0.2), // Transparan soft
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: IconButton(
+                                                  icon: Icon(Icons.clear,
+                                                      color: Colors.red,
+                                                      size: 18),
+                                                  splashRadius: 18,
+                                                  padding: EdgeInsets.zero,
+                                                  constraints: BoxConstraints(),
+                                                  onPressed: () {
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .showSnackBar(
+                                                      SnackBar(
+                                                        content: Text(
+                                                            'Kolom sudah dikosongkan, Silakan isi customer baru'),
+                                                      ),
+                                                    );
+                                                    setState(() {
+                                                      this.selectedItem = null;
+                                                      selectedCustomerId = null;
+                                                      nameController.clear();
+                                                      phoneController.clear();
+                                                      isNewCustomer = true;
+                                                    });
+                                                  },
+                                                ),
                                               ),
                                           ],
                                         );
