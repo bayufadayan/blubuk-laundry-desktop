@@ -208,7 +208,7 @@ class _TransactionListState extends State<TransactionList> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text("Daftar Customer",
+            Text("Daftar Transaksi",
                 style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w600, fontSize: 32)),
             SizedBox(height: 10),

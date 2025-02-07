@@ -1,9 +1,10 @@
-// ignore_for_file: prefer_const_constructors
-
-import 'package:app_laundry_bismillah/views/auth/login.dart';
+// ignore_for_file: prefer_const_constructors, use_build_context_synchronously
+import 'dart:convert';
 import 'package:app_laundry_bismillah/views/dashboard/new_order.dart';
 import 'package:app_laundry_bismillah/widgets/myappbar.dart';
 import 'package:flutter/material.dart';
+import 'package:dropdown_search/dropdown_search.dart';
+import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 
 class CustomerInfo extends StatefulWidget {
@@ -14,6 +15,68 @@ class CustomerInfo extends StatefulWidget {
 }
 
 class _CustomerInfoState extends State<CustomerInfo> {
+  List<Map<String, dynamic>> customers = [];
+  String? selectedCustomerId;
+  TextEditingController nameController = TextEditingController();
+  TextEditingController phoneController = TextEditingController();
+  bool isNewCustomer = false;
+  String? selectedItem;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchCustomers();
+  }
+
+  Future<void> fetchCustomers() async {
+    try {
+      var response = await http.get(
+          Uri.parse('http://localhost:8080/blubuklaundry/getCustomerData.php'));
+      if (response.statusCode == 200) {
+        List<dynamic> data = jsonDecode(response.body);
+        setState(() {
+          customers = List<Map<String, dynamic>>.from(data);
+        });
+      }
+    } catch (e) {
+      print('Error fetching customers: $e');
+    }
+  }
+
+  Future<String?> createCustomer() async {
+    try {
+      var response = await http.post(
+        Uri.parse('http://localhost:8080/blubuklaundry/createCustomer.php'),
+        body: {
+          'name': nameController.text,
+          'phone_number': phoneController.text,
+        },
+      );
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        return data['id'].toString();
+      }
+    } catch (e) {
+      print('Error creating customer: $e');
+    }
+    return null;
+  }
+
+  void onNextPressed() async {
+    String? customerId = selectedCustomerId;
+    if (isNewCustomer) {
+      customerId = await createCustomer();
+    }
+    if (customerId != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            // builder: (context) => NewOrder(customerId: customerId)),
+            builder: (context) => NewOrder()),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -89,7 +152,8 @@ class _CustomerInfoState extends State<CustomerInfo> {
                             ),
                             Container(
                               alignment: Alignment.topLeft,
-                              child: Text('Masukan dan Pilih Customers',
+                              child: Text(
+                                  'Masukan Nama/No Telp dan Pilih Customers',
                                   style: GoogleFonts.roboto(
                                       fontSize: 13.5,
                                       fontWeight: FontWeight.w500),
@@ -97,30 +161,92 @@ class _CustomerInfoState extends State<CustomerInfo> {
                             ),
                             Padding(padding: EdgeInsets.only(top: 3.7)),
                             Container(
-                              alignment: Alignment.topLeft,
-                              width: double.infinity,
-                              height: 42,
-                              decoration: BoxDecoration(
-                                color: Colors.white60,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: TextField(
-                                  style: GoogleFonts.roboto(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color.fromARGB(255, 1, 32, 44),
-                                  ),
-                                  decoration: InputDecoration(
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                alignment: Alignment.topLeft,
+                                width: double.infinity,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: Colors.white60,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Column(
+                                  children: [
+                                    DropdownSearch<String>(
+                                      popupProps: PopupProps.menu(
+                                        showSearchBox: true,
+                                        menuProps: MenuProps(
+                                          backgroundColor: Colors.grey[200],
+                                        ),
+                                      ),
+                                      items: (String filter,
+                                          LoadProps? props) async {
+                                        return customers
+                                            .map((c) =>
+                                                "${c['name']} - ${c['phone_number']}")
+                                            .where((item) => item
+                                                .toLowerCase()
+                                                .contains(filter.toLowerCase()))
+                                            .toList();
+                                      },
+                                      dropdownBuilder: (context, selectedItem) {
+                                        return Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              selectedItem ?? "Cari Customer",
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: selectedItem != null
+                                                    ? Colors.blue.shade800
+                                                    : Colors.grey,
+                                              ),
+                                            ),
+                                            if (selectedItem != null)
+                                              IconButton(
+                                                icon: Icon(Icons.clear,
+                                                    color: Colors.red),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    this.selectedItem = null;
+                                                  });
+                                                },
+                                              ),
+                                          ],
+                                        );
+                                      },
+                                      onChanged: (value) {
+                                        if (value != null) {
+                                          var selected = customers.firstWhere(
+                                            (c) =>
+                                                "${c['name']} - ${c['phone_number']}" ==
+                                                value,
+                                            orElse: () => {},
+                                          );
+                                          if (selected.isNotEmpty) {
+                                            setState(() {
+                                              selectedCustomerId =
+                                                  selected['id'].toString();
+                                              nameController.text =
+                                                  selected['name'];
+                                              phoneController.text =
+                                                  selected['phone_number'];
+                                              isNewCustomer = false;
+                                              selectedItem = value;
+                                            });
+                                          }
+                                        } else {
+                                          setState(() {
+                                            selectedCustomerId = null;
+                                            nameController.clear();
+                                            phoneController.clear();
+                                            isNewCustomer = true;
+                                            selectedItem = null;
+                                          });
+                                        }
+                                      },
                                     ),
-                                    hintText: 'Masukan nama customers',
-                                    hintStyle: GoogleFonts.roboto(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  )),
-                            ),
+                                  ],
+                                )),
                             Padding(
                               padding: EdgeInsets.symmetric(vertical: 4),
                               child: Divider(
@@ -146,6 +272,8 @@ class _CustomerInfoState extends State<CustomerInfo> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: TextField(
+                                  controller: nameController,
+                                  enabled: isNewCustomer,
                                   keyboardType: TextInputType.name,
                                   style: GoogleFonts.roboto(
                                     fontSize: 16,
@@ -182,8 +310,9 @@ class _CustomerInfoState extends State<CustomerInfo> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: TextField(
-                                  keyboardType:
-                                      TextInputType.numberWithOptions(),
+                                  controller: phoneController,
+                                  enabled: isNewCustomer,
+                                  keyboardType: TextInputType.phone,
                                   style: GoogleFonts.roboto(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
@@ -215,14 +344,7 @@ class _CustomerInfoState extends State<CustomerInfo> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => NewOrder(),
-                                    ),
-                                  );
-                                },
+                                onPressed: onNextPressed,
                                 child: Text("Next"),
                               ),
                             ),
