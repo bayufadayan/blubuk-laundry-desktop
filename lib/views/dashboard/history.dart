@@ -6,7 +6,6 @@ import 'package:app_laundry_bismillah/views/dashboard/dashboard.dart';
 import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
 import 'package:http/http.dart' as http;
-import 'package:app_laundry_bismillah/main.dart';
 
 class History extends StatelessWidget {
   const History({super.key});
@@ -71,6 +70,7 @@ class ItemList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
+      // ignore: unnecessary_null_comparison
       itemCount: list == null ? 0 : list.length,
       itemBuilder: (context, i) {
         return Row(

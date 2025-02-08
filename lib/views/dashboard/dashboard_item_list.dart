@@ -1,12 +1,16 @@
 import 'package:app_laundry_bismillah/views/dashboard/admin_list.dart';
+import 'package:app_laundry_bismillah/views/dashboard/customer_info.dart';
+import 'package:app_laundry_bismillah/views/dashboard/customer_list.dart';
 import 'package:app_laundry_bismillah/views/dashboard/myprofile.dart';
 import 'package:flutter/material.dart';
 import 'package:app_laundry_bismillah/utils/session_manager.dart';
 import 'package:app_laundry_bismillah/views/auth/login.dart';
 
+import 'transaction_list.dart';
+
 final List<String> items = [
   'New Order',
-  'Daftar Antrian',
+  'Daftar Customers',
   'Daftar Transaksi',
   'Daftar Admin',
   'My Profile',
@@ -15,7 +19,7 @@ final List<String> items = [
 
 final List<IconData> icons = [
   Icons.add_shopping_cart,
-  Icons.queue,
+  Icons.people,
   Icons.list,
   Icons.admin_panel_settings,
   Icons.person,
@@ -42,9 +46,9 @@ void logout(BuildContext context) async {
 }
 
 List<Function(BuildContext)> functions = [
-  (context) => showMessage("Tambah item ke keranjang"),
-  (context) => showMessage("Antri"),
-  (context) => showMessage("Lihat daftar"),
+  (context) => nagigatePageTo(context, CustomerInfo()),
+  (context) => nagigatePageTo(context, CustomerList()),
+  (context) => nagigatePageTo(context, TransactionList()),
   (context) => nagigatePageTo(context, AdminList()),
   (context) => nagigatePageTo(context, MyProfile()),
   (context) => logout(context),
