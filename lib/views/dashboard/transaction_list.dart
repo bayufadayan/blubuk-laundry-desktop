@@ -84,6 +84,59 @@ class _TransactionListState extends State<TransactionList> {
     });
   }
 
+  Future<void> updateTransaction(String id, String statusBayar) async {
+    final response = await http.post(
+      Uri.parse(
+          'http://localhost:8080/blubuklaundry/updateTransactionPaidStatus.php'),
+      body: {
+        'id': id.toString(),
+        'status_bayar': statusBayar,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      // final result = json.decode(response.body);
+      fetchData();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            backgroundColor: Colors.green,
+            content: Text('Status Berhasil Diubah')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            backgroundColor: Colors.red, content: Text('Status Gagal Diubah')),
+      );
+    }
+  }
+
+  Future<void> updateTransactionLaundryStatus(
+      String id, String statusLaundry) async {
+    final response = await http.post(
+      Uri.parse(
+          'http://localhost:8080/blubuklaundry/updateTransactionLaundryStatus.php'),
+      body: {
+        'id': id.toString(),
+        'status_laundry': statusLaundry,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      // final result = json.decode(response.body);
+      fetchData();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            backgroundColor: Colors.green,
+            content: Text('Status Berhasil Diubah')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            backgroundColor: Colors.red, content: Text('Status Gagal Diubah')),
+      );
+    }
+  }
+
   void launchWhatsApp(String nomor) async {
     final Uri url =
         Uri.parse("https://wa.me/${nomor.replaceAll(RegExp(r'^0'), '62')}");
@@ -182,11 +235,66 @@ class _TransactionListState extends State<TransactionList> {
           width: 95,
           enableEditingMode: false),
       PlutoColumn(
-          title: 'Status Laundry',
-          field: 'status_laundry',
-          type: PlutoColumnType.text(),
-          width: 138,
-          enableEditingMode: false),
+        title: 'Status Laundry',
+        field: 'status_laundry',
+        type: PlutoColumnType.text(),
+        width: 138,
+        enableEditingMode: false,
+        renderer: (rendererContext) {
+          final row = rendererContext.row;
+          final statusLaundry = row.cells['status_laundry']?.value;
+          return SizedBox(
+            width: double.infinity,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final transactionId = row.cells['id']?.value;
+                      if (statusLaundry == "Dalam Antrian") {
+                        updateTransactionLaundryStatus(
+                            transactionId, "Cuci (Proses 1)");
+                      } else if (statusLaundry == "Cuci (Proses 1)") {
+                        updateTransactionLaundryStatus(
+                            transactionId, "Setrika (Proses 2)");
+                      } else if (statusLaundry == "Setrika (Proses 2)") {
+                        updateTransactionLaundryStatus(
+                            transactionId, "Siap Ambil");
+                      } else if (statusLaundry == "Siap Ambil") {
+                        updateTransactionLaundryStatus(
+                            transactionId, "Transaksi Selesai");
+                      } else {
+                        updateTransactionLaundryStatus(
+                            transactionId, "Dalam Antrian");
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: statusLaundry != "Dalam Antrian"
+                          ? statusLaundry != "Cuci (Proses 1)"
+                              ? statusLaundry != "Setrika (Proses 2)"
+                                  ? statusLaundry != "Siap Ambil"
+                                      ? Colors.grey
+                                      : Colors.green
+                                  : Colors.purple
+                              : Colors.blue
+                          : Colors.orange,
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      textStyle: TextStyle(fontSize: 14),
+                    ),
+                    child: Text(
+                      statusLaundry,
+                      style: TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
       PlutoColumn(
           title: 'Tanggal Bayar',
           field: 'tanggal_bayar',
@@ -194,11 +302,49 @@ class _TransactionListState extends State<TransactionList> {
           width: 140,
           enableEditingMode: false),
       PlutoColumn(
-          title: 'Status Bayar',
-          field: 'status_bayar',
-          type: PlutoColumnType.text(),
-          width: 130,
-          enableEditingMode: false),
+        title: 'Status Bayar',
+        field: 'status_bayar',
+        type: PlutoColumnType.text(),
+        width: 130,
+        enableEditingMode: false,
+        renderer: (rendererContext) {
+          final row = rendererContext.row;
+          final statusBayar = row.cells['status_bayar']?.value;
+          return SizedBox(
+            width: double.infinity,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final transactionId = row.cells['id']?.value;
+                      if (statusBayar != "Lunas") {
+                        updateTransaction(transactionId, "Lunas");
+                      } else {
+                        updateTransaction(transactionId, "Belum Lunas");
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: statusBayar != "Lunas"
+                          ? Color.fromARGB(255, 185, 14, 2)
+                          : Color.fromARGB(255, 54, 185, 2),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      textStyle: TextStyle(fontSize: 14),
+                    ),
+                    child: Text(
+                      statusBayar,
+                      style: TextStyle(color: Colors.white),
+                      textAlign: TextAlign.start,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     ];
 
     return Scaffold(

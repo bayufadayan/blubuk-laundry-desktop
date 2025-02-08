@@ -1,9 +1,8 @@
 // ignore_for_file: unused_import, prefer_const_constructors, use_build_context_synchronously
-
 import 'dart:convert';
-
 import 'package:app_laundry_bismillah/views/dashboard/customer_info.dart';
 import 'package:app_laundry_bismillah/views/dashboard/history.dart';
+import 'package:app_laundry_bismillah/views/dashboard/sales_receipt_success.dart';
 import 'package:app_laundry_bismillah/widgets/myappbar.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
@@ -40,15 +39,16 @@ class NewOrder extends StatefulWidget {
 class _NewOrderState extends State<NewOrder> {
   final timeNow = DateTime.now();
   TextEditingController timeController = TextEditingController();
-  TextEditingController serviceController = TextEditingController();
   TextEditingController weightController = TextEditingController();
   final String invoice = generateInvoice();
+  String service = "Regular";
   List<Map<String, dynamic>> itemCategory = [];
   List<Map<String, dynamic>> itemLaundry = [];
   String? selectedItemCategoryId;
   int? transactionId;
   int subTotalItem = 0;
   int hargaPokok = 0;
+  int totalTagihan = 0;
   // buat item terpilih di dropdown
   String? selectedItem;
 
@@ -141,17 +141,23 @@ class _NewOrderState extends State<NewOrder> {
           'id_transaction': idTransaction.toString(),
         },
       );
-
       if (response.statusCode == 200) {
         List<dynamic> data = jsonDecode(response.body);
         setState(() {
+          totalTagihan = 0;
+        });
+        for (var item in data) {
+          setState(() {
+            totalTagihan +=
+                double.parse(item['total_harga_item'].toString()).floor();
+          });
+        }
+        setState(() {
           itemLaundry = List<Map<String, dynamic>>.from(data);
         });
-      } else {
-        print('Failed to load item laundry: ${response.statusCode}');
-      }
+      } else {}
     } catch (e) {
-      print('Error fetching item laundry: $e');
+      // print('Error fetching item laundry: $e');
     }
   }
 
@@ -165,6 +171,7 @@ class _NewOrderState extends State<NewOrder> {
             backgroundColor: Colors.red,
           ),
         );
+        return;
       }
       var response = await http.post(
         Uri.parse('http://localhost:8080/blubuklaundry/addItemLaundry.php'),
@@ -220,12 +227,18 @@ class _NewOrderState extends State<NewOrder> {
 
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
+        fetchItemLaundry(int.parse(widget.customerId), transactionId!);
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Item Berhasil diTambahkan"),
-              backgroundColor: Colors.green,
-            ),
-          );
+          SnackBar(
+            content: Text("Item Berhasil diTambahkan"),
+            backgroundColor: Colors.green,
+          ),
+        );
+        setState(() {
+          weightController.clear();
+          subTotalItem = 0;
+          hargaPokok = 0;
+        });
         if (data['status'] == 'error') {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -249,6 +262,65 @@ class _NewOrderState extends State<NewOrder> {
     return;
   }
 
+  Future<void> deleteItemLaundry(String id) async {
+    final response = await http.post(
+      Uri.parse('http://localhost:8080/blubuklaundry/deleteItemLaundry.php'),
+      body: {'id': id},
+    );
+
+    final result = json.decode(response.body);
+    if (result['success']) {
+      deleteTransactionDetail(id);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'])),
+      );
+
+      fetchItemLaundry(int.parse(widget.customerId), transactionId!);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Gagal menghapus data: ${result['message']}")),
+      );
+    }
+  }
+
+  Future<void> deleteTransactionDetail(String id) async {
+    final response = await http.post(
+      Uri.parse(
+          'http://localhost:8080/blubuklaundry/deleteTransactionDetail.php'),
+      body: {'id': id},
+    );
+
+    final result = json.decode(response.body);
+    if (result['success']) {
+      fetchItemLaundry(int.parse(widget.customerId), transactionId!);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Gagal menghapus data: ${result['message']}")),
+      );
+    }
+  }
+
+  Future<void> updateTransaction(String id, String layanan) async {
+    final response = await http.post(
+      Uri.parse('http://localhost:8080/blubuklaundry/updateTransaction.php'),
+      body: {
+        'id': id,
+        'layanan': layanan,
+        'total_tagihan': totalTagihan.toString(),
+      },
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Transaksi Berhasil Dilakukan')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal melakukan transaksi')),
+      );
+    }
+  }
+
   void onAddLaundryItemPressed() async {
     if (transactionId == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -257,7 +329,6 @@ class _NewOrderState extends State<NewOrder> {
       ));
     } else {
       createItemLaundry(context);
-      fetchItemLaundry(int.parse(widget.customerId), transactionId!);
     }
   }
 
@@ -558,8 +629,10 @@ class _NewOrderState extends State<NewOrder> {
                                                       }).toList(),
                                                       onChanged: (value) {
                                                         // Handle perubahan pilihan
-                                                        print(
-                                                            "Selected: $value");
+                                                        setState(() {
+                                                          service = value ??
+                                                              "Regular";
+                                                        });
                                                       },
                                                       decoration:
                                                           InputDecoration(
@@ -625,7 +698,7 @@ class _NewOrderState extends State<NewOrder> {
                                                     ),
                                                   ),
                                                   Text(
-                                                    'Rp. 56.000',
+                                                    "Rp ${NumberFormat('#,###').format(totalTagihan)}",
                                                     style: GoogleFonts.roboto(
                                                       fontSize: 22,
                                                       fontWeight:
@@ -1118,17 +1191,17 @@ class _NewOrderState extends State<NewOrder> {
                                                                       30),
                                                                   1: FlexColumnWidth(),
                                                                   2: FixedColumnWidth(
-                                                                      60),
+                                                                      130),
                                                                   3: FixedColumnWidth(
-                                                                      100),
+                                                                      130),
                                                                   4: FixedColumnWidth(
-                                                                      60),
+                                                                      150),
                                                                 },
                                                                 children: [
                                                                   _buildTableRow([
                                                                     "#",
                                                                     "Item",
-                                                                    "Qty",
+                                                                    "Qty/Berat",
                                                                     "Harga",
                                                                     "Aksi"
                                                                   ],
@@ -1156,16 +1229,26 @@ class _NewOrderState extends State<NewOrder> {
                                                                           'item_name'],
                                                                       item[
                                                                           'qty'],
-                                                                      item[
-                                                                          'total_harga_item'],
+                                                                      "Rp ${NumberFormat('#,###').format(int.parse(item['total_harga_item']))}",
                                                                       ElevatedButton(
                                                                         onPressed:
-                                                                            () {},
+                                                                            () {
+                                                                          deleteItemLaundry(
+                                                                              item['id'].toString());
+                                                                        },
+                                                                        style: ElevatedButton
+                                                                            .styleFrom(
+                                                                          backgroundColor:
+                                                                              Colors.red,
+                                                                          foregroundColor:
+                                                                              Colors.white,
+                                                                        ),
                                                                         child: Text(
                                                                             "Delete"),
-                                                                      )
+                                                                      ),
                                                                     ]);
-                                                                  }).toList(),
+                                                                  }),
+                                                                  // }).toList(),
                                                                 ],
                                                               ),
                                                       ],
@@ -1194,7 +1277,31 @@ class _NewOrderState extends State<NewOrder> {
                                                   BorderRadius.circular(8),
                                             ),
                                           ),
-                                          onPressed: () {},
+                                          onPressed: () {
+                                            // Memanggil fungsi untuk memperbarui transaksi
+                                            updateTransaction(
+                                                transactionId!.toString(),
+                                                service);
+
+                                            Navigator.pushReplacement(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    SalesReceiptSuccess(
+                                                  invoice: invoice,
+                                                  customerName:
+                                                      widget.customerName,
+                                                  nomorWa: widget.customerPhone,
+                                                  layanan: service,
+                                                  statusLaundry:
+                                                      "Dalam Antrian",
+                                                  totalTagihan: totalTagihan,
+                                                  statusBayar: "Belum Lunas",
+                                                  itemLaundry: itemLaundry,
+                                                ),
+                                              ),
+                                            );
+                                          },
                                           child: Text("Next"),
                                         ),
                                       ),
@@ -1218,16 +1325,23 @@ TableRow _buildTableRow(List<dynamic> cells, {bool isHeader = false}) {
   return TableRow(
     decoration:
         BoxDecoration(color: isHeader ? Colors.grey[300] : Colors.transparent),
-    children: cells.map((text) {
-      String displayText = text != null ? text.toString() : '';
-      return Padding(
-        padding: EdgeInsets.all(8),
-        child: Text(
-          displayText,
-          style: TextStyle(
-              fontWeight: isHeader ? FontWeight.bold : FontWeight.normal),
-        ),
-      );
+    children: cells.map((cell) {
+      if (cell is ElevatedButton) {
+        return Padding(
+          padding: EdgeInsets.all(8),
+          child: cell,
+        );
+      } else {
+        String displayText = cell != null ? cell.toString() : '';
+        return Padding(
+          padding: EdgeInsets.all(8),
+          child: Text(
+            displayText,
+            style: TextStyle(
+                fontWeight: isHeader ? FontWeight.bold : FontWeight.normal),
+          ),
+        );
+      }
     }).toList(),
   );
 }
