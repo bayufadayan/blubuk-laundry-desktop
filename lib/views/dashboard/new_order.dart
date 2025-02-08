@@ -1,11 +1,15 @@
-// ignore_for_file: unused_import, prefer_const_constructors
+// ignore_for_file: unused_import, prefer_const_constructors, use_build_context_synchronously
+
+import 'dart:convert';
 
 import 'package:app_laundry_bismillah/views/dashboard/customer_info.dart';
 import 'package:app_laundry_bismillah/views/dashboard/history.dart';
 import 'package:app_laundry_bismillah/widgets/myappbar.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:app_laundry_bismillah/main.dart';
+import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:math';
 import 'dart:core';
@@ -19,8 +23,15 @@ String generateInvoice() {
 
 class NewOrder extends StatefulWidget {
   final String customerId;
+  final String customerName;
+  final String customerPhone;
 
-  const NewOrder({super.key, required this.customerId});
+  const NewOrder({
+    super.key,
+    required this.customerId,
+    required this.customerName,
+    required this.customerPhone,
+  });
 
   @override
   State<NewOrder> createState() => _NewOrderState();
@@ -28,33 +39,226 @@ class NewOrder extends StatefulWidget {
 
 class _NewOrderState extends State<NewOrder> {
   final timeNow = DateTime.now();
-  TextEditingController controllerWaktu = TextEditingController();
-  TextEditingController controllerLayanan = TextEditingController();
-  TextEditingController controllerMetodeAmbil = TextEditingController();
-  TextEditingController controllerJenisLayanan = TextEditingController();
-  TextEditingController controllerJenisBahan = TextEditingController();
-  TextEditingController controllerBerat = TextEditingController();
-  TextEditingController controllerHargaPokok = TextEditingController();
+  TextEditingController timeController = TextEditingController();
+  TextEditingController serviceController = TextEditingController();
+  TextEditingController weightController = TextEditingController();
   final String invoice = generateInvoice();
+  List<Map<String, dynamic>> itemCategory = [];
+  List<Map<String, dynamic>> itemLaundry = [];
+  String? selectedItemCategoryId;
+  int? transactionId;
+  int subTotalItem = 0;
+  int hargaPokok = 0;
+  // buat item terpilih di dropdown
+  String? selectedItem;
 
   @override
   void initState() {
     super.initState();
-    controllerWaktu.text = DateTime.now().toString();
+    createTransaction(context);
+    fetchItemCategory();
+    timeController.text = DateTime.now().toString();
   }
 
-  void addData() {
-    var url = "http://localhost:8080/blubuklaundry/adddata.php";
+  // void addData() {
+  //   var url = "http://localhost:8080/blubuklaundry/adddata.php";
 
-    http.post(Uri.parse(url), body: {
-      "waktu": controllerWaktu.text,
-      "tanggal": controllerLayanan.text,
-      "metodeambil": controllerMetodeAmbil.text,
-      "jenislayanan": controllerJenisLayanan.text,
-      "jenisbahan": controllerJenisBahan.text,
-      "berat": controllerBerat.text,
-      "hargapokok": controllerHargaPokok.text,
-    });
+  //   http.post(Uri.parse(url), body: {
+  //     "waktu": timeController.text,
+  //     "tanggal": serviceController.text,
+  //     "metodeambil": controllerMetodeAmbil.text,
+  //     "jenislayanan": controllerJenisLayanan.text,
+  //     "jenisbahan": controllerJenisBahan.text,
+  //     "berat": weightController.text,
+  //     "hargapokok": controllerHargaPokok.text,
+  //   });
+  // }
+
+  Future<void> createTransaction(BuildContext context) async {
+    try {
+      var response = await http.post(
+        Uri.parse(
+            'http://localhost:8080/blubuklaundry/addBlankTransaction.php'),
+        body: {
+          'invoice': invoice,
+          'id_customer': widget.customerId,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        if (data['status'] == 'error') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(data['message']),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+        setState(() {
+          transactionId = int.parse(data['data']['id'].toString());
+        });
+        fetchItemLaundry(int.parse(widget.customerId), transactionId!);
+        return;
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+    return;
+  }
+
+  Future<void> fetchItemCategory() async {
+    try {
+      var response = await http.get(
+          Uri.parse('http://localhost:8080/blubuklaundry/getItemCategory.php'));
+      if (response.statusCode == 200) {
+        List<dynamic> data = jsonDecode(response.body);
+        setState(() {
+          itemCategory = List<Map<String, dynamic>>.from(data);
+        });
+      }
+    } catch (e) {
+      print('Error fetching itemCategory: $e');
+    }
+  }
+
+  Future<void> fetchItemLaundry(int idCustomer, int idTransaction) async {
+    try {
+      var response = await http.post(
+        Uri.parse(
+            'http://localhost:8080/blubuklaundry/getItemLaundrybyTransaction.php'),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'id_customer': idCustomer.toString(),
+          'id_transaction': idTransaction.toString(),
+        },
+      );
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = jsonDecode(response.body);
+        setState(() {
+          itemLaundry = List<Map<String, dynamic>>.from(data);
+        });
+      } else {
+        print('Failed to load item laundry: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching item laundry: $e');
+    }
+  }
+
+  // fungsi add item laundry
+  Future<void> createItemLaundry(BuildContext context) async {
+    try {
+      if (weightController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Kolom berat/qty wajib diisi"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      var response = await http.post(
+        Uri.parse('http://localhost:8080/blubuklaundry/addItemLaundry.php'),
+        body: {
+          'id_customer': widget.customerId,
+          'id_item_category': selectedItemCategoryId,
+          'id_transaction': transactionId.toString(),
+          'berat_qty': weightController.text,
+          'total_harga_item': subTotalItem.toString(),
+        },
+      );
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        int itemLaundryId = int.parse(data['id_item_category'].toString());
+        print("${transactionId!} + ${itemLaundryId} + ${subTotalItem}");
+        createTransactionDetail(transactionId!, itemLaundryId, subTotalItem);
+        if (data['status'] == 'error') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(data['message']),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+        return;
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text('terjadi kesalahan saat membuat item (${e.toString()})'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+    return;
+  }
+
+  Future<void> createTransactionDetail(
+      int idTransaksi, int idItemLaundry, int totalBayar) async {
+    try {
+      var response = await http.post(
+        Uri.parse(
+            'http://localhost:8080/blubuklaundry/addTransactionDetail.php'),
+        body: {
+          'id_transaksi': idTransaksi.toString(),
+          'id_item_laundry': idItemLaundry.toString(),
+          'total_bayar': totalBayar.toString(),
+        },
+      );
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Item Berhasil diTambahkan"),
+              backgroundColor: Colors.green,
+            ),
+          );
+        if (data['status'] == 'error') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(data['message']),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+        return;
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              "Terjadi kesalahan saat membuat detail transaksi ${e.toString()}"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+    return;
+  }
+
+  void onAddLaundryItemPressed() async {
+    if (transactionId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        backgroundColor: Colors.red,
+        content: Text('Terjadi Kesalahan, Transaksi Null'),
+      ));
+    } else {
+      createItemLaundry(context);
+      fetchItemLaundry(int.parse(widget.customerId), transactionId!);
+    }
   }
 
   @override
@@ -113,7 +317,7 @@ class _NewOrderState extends State<NewOrder> {
                           ],
                         ),
                         width: 280,
-                        height: 475,
+                        height: 520,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,7 +359,7 @@ class _NewOrderState extends State<NewOrder> {
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500)),
                                 Text(
-                                  "Magitassz",
+                                  widget.customerName,
                                   style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold),
@@ -171,7 +375,7 @@ class _NewOrderState extends State<NewOrder> {
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500)),
                                 Text(
-                                  "325492384",
+                                  widget.customerPhone,
                                   style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold),
@@ -182,484 +386,821 @@ class _NewOrderState extends State<NewOrder> {
                         ),
                       ),
                       SizedBox(width: 20),
-                      Container(
-                        width: 900,
-                        height: 475,
-                        padding: EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                              color: Color.fromRGBO(71, 71, 102, 1),
-                              width: 0.0),
-                          gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: const <Color>[
-                                Color.fromARGB(255, 248, 232, 246),
-                                Color.fromARGB(255, 219, 222, 241),
-                                Color.fromARGB(255, 181, 186, 214),
-                                Color.fromARGB(255, 149, 158, 211),
-                              ]),
-                        ),
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Text(
-                                "Detail Transaksi",
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Container(
+                          // width: 900,
+                          // height: 475,
+                          padding: EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: Color.fromRGBO(71, 71, 102, 1),
+                                width: 0.0),
+                            gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: const <Color>[
+                                  Color.fromARGB(255, 248, 232, 246),
+                                  Color.fromARGB(255, 219, 222, 241),
+                                  Color.fromARGB(255, 181, 186, 214),
+                                  Color.fromARGB(255, 149, 158, 211),
+                                ]),
+                          ),
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                  "Detail Transaksi",
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                              SizedBox(height: 8),
-                              Divider(thickness: 1, color: Colors.black),
-                              SizedBox(height: 8),
-                              Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    Container(
-                                      margin: const EdgeInsets.only(bottom: 10),
-                                      padding: const EdgeInsets.all(16),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(12),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color:
-                                                Colors.black.withOpacity(0.1),
-                                            blurRadius: 6,
-                                            offset: Offset(0, 3),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: <Widget>[
-                                            Row(
-                                              children: [
-                                                Container(
-                                                  alignment: Alignment.topLeft,
-                                                  width: 175,
-                                                  height: 50,
-                                                  // height: 38,
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
-                                                  ),
-                                                  child: TextField(
-                                                    controller: controllerWaktu,
-                                                    enabled: false,
-                                                    style: GoogleFonts.roboto(
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        color: Colors
-                                                            .blue.shade900),
-                                                    decoration: InputDecoration(
-                                                      floatingLabelBehavior:
-                                                          FloatingLabelBehavior
-                                                              .always,
-                                                      label: Text(
-                                                        "Waktu",
-                                                      ),
-                                                      border:
-                                                          OutlineInputBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                        borderSide: BorderSide(
-                                                            color: Colors.blue),
-                                                      ),
-                                                      enabledBorder:
-                                                          OutlineInputBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                        borderSide: BorderSide(
-                                                            color: Colors.blue),
-                                                      ),
-                                                      focusedBorder:
-                                                          OutlineInputBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                        borderSide: BorderSide(
-                                                            color: Colors.blue),
-                                                      ),
-                                                      hintStyle:
-                                                          GoogleFonts.roboto(
-                                                        fontSize: 13,
-                                                        fontWeight:
-                                                            FontWeight.w500,
+                                SizedBox(height: 8),
+                                Divider(thickness: 1, color: Colors.black),
+                                SizedBox(height: 8),
+                                Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      Container(
+                                        width: double.infinity,
+                                        margin:
+                                            const EdgeInsets.only(bottom: 10),
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color:
+                                                  Colors.black.withOpacity(0.1),
+                                              blurRadius: 6,
+                                              offset: Offset(0, 3),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: <Widget>[
+                                              Row(
+                                                children: [
+                                                  Container(
+                                                    alignment:
+                                                        Alignment.topLeft,
+                                                    width: 175,
+                                                    height: 50,
+                                                    // height: 38,
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                    ),
+                                                    child: TextField(
+                                                      controller:
+                                                          timeController,
+                                                      enabled: false,
+                                                      style: GoogleFonts.roboto(
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color: Colors
+                                                              .blue.shade900),
+                                                      decoration:
+                                                          InputDecoration(
+                                                        floatingLabelBehavior:
+                                                            FloatingLabelBehavior
+                                                                .always,
+                                                        label: Text(
+                                                          "Waktu",
+                                                        ),
+                                                        border:
+                                                            OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                          borderSide:
+                                                              BorderSide(
+                                                                  color: Colors
+                                                                      .blue),
+                                                        ),
+                                                        enabledBorder:
+                                                            OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                          borderSide:
+                                                              BorderSide(
+                                                                  color: Colors
+                                                                      .blue),
+                                                        ),
+                                                        focusedBorder:
+                                                            OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                          borderSide:
+                                                              BorderSide(
+                                                                  color: Colors
+                                                                      .blue),
+                                                        ),
+                                                        hintStyle:
+                                                            GoogleFonts.roboto(
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
-                                                ),
-                                                SizedBox(
-                                                  width: 10,
-                                                ),
-                                                Container(
-                                                  alignment: Alignment.topLeft,
-                                                  width: 200,
-                                                  height: 50,
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
+                                                  SizedBox(
+                                                    width: 10,
                                                   ),
-                                                  child:
-                                                      DropdownButtonFormField<
-                                                          String>(
-                                                    value: "Regular",
-                                                    items: [
-                                                      "Regular",
-                                                      "Express"
-                                                    ].map((String item) {
-                                                      return DropdownMenuItem<
-                                                          String>(
-                                                        value: item,
-                                                        child: Text(item,
+                                                  Container(
+                                                    alignment:
+                                                        Alignment.topLeft,
+                                                    width: 200,
+                                                    height: 50,
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                    ),
+                                                    child:
+                                                        DropdownButtonFormField<
+                                                            String>(
+                                                      value: "Regular",
+                                                      items: [
+                                                        "Regular",
+                                                        "Express"
+                                                      ].map((String item) {
+                                                        return DropdownMenuItem<
+                                                            String>(
+                                                          value: item,
+                                                          child: Text(item,
+                                                              style: GoogleFonts
+                                                                  .roboto(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
+                                                                color: Color
+                                                                    .fromARGB(
+                                                                        255,
+                                                                        1,
+                                                                        32,
+                                                                        44),
+                                                              )),
+                                                        );
+                                                      }).toList(),
+                                                      onChanged: (value) {
+                                                        // Handle perubahan pilihan
+                                                        print(
+                                                            "Selected: $value");
+                                                      },
+                                                      decoration:
+                                                          InputDecoration(
+                                                        floatingLabelBehavior:
+                                                            FloatingLabelBehavior
+                                                                .always,
+                                                        label: Text(
+                                                            "Pilihan Layanan"),
+                                                        border:
+                                                            OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                          borderSide:
+                                                              BorderSide(
+                                                                  color: Colors
+                                                                      .blue),
+                                                        ),
+                                                        enabledBorder:
+                                                            OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                          borderSide:
+                                                              BorderSide(
+                                                                  color: Colors
+                                                                      .blue),
+                                                        ),
+                                                        focusedBorder:
+                                                            OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                          borderSide:
+                                                              BorderSide(
+                                                                  color: Colors
+                                                                      .blue),
+                                                        ),
+                                                        hintText:
+                                                            "Regular / Express",
+                                                        hintStyle:
+                                                            GoogleFonts.roboto(
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  )
+                                                ],
+                                              ),
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.end,
+                                                children: [
+                                                  Text(
+                                                    'Total Tagihan',
+                                                    style: GoogleFonts.roboto(
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color: Colors.grey[700],
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    'Rp. 56.000',
+                                                    style: GoogleFonts.roboto(
+                                                      fontSize: 22,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.black,
+                                                    ),
+                                                  ),
+                                                ],
+                                              )
+                                            ]),
+                                      ),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Silakan Input Item Laundry',
+                                            style: TextStyle(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.purple.shade700),
+                                          ),
+                                          SizedBox(
+                                            height: 10,
+                                          ),
+
+                                          // ini column buat nambah item
+                                          SizedBox(
+                                            height: 225,
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.max,
+                                              children: [
+                                                SingleChildScrollView(
+                                                  scrollDirection:
+                                                      Axis.horizontal,
+                                                  child: Row(
+                                                    children: [
+                                                      Container(
+                                                        width: 300,
+                                                        height: 50,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors.white60,
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                        child: DropdownSearch<
+                                                            String>(
+                                                          popupProps:
+                                                              PopupProps.menu(
+                                                            showSearchBox: true,
+                                                            menuProps:
+                                                                MenuProps(
+                                                              backgroundColor:
+                                                                  Colors.grey[
+                                                                      200],
+                                                            ),
+                                                          ),
+                                                          items: (String filter,
+                                                              LoadProps?
+                                                                  props) async {
+                                                            return itemCategory
+                                                                .map((c) =>
+                                                                    "${c['nama']} - ${c['harga']}")
+                                                                .where((item) => item
+                                                                    .toLowerCase()
+                                                                    .contains(filter
+                                                                        .toLowerCase()))
+                                                                .toList();
+                                                          },
+                                                          dropdownBuilder:
+                                                              (context,
+                                                                  selectedItem) {
+                                                            return Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .spaceBetween,
+                                                              children: [
+                                                                Text(
+                                                                  selectedItem ??
+                                                                      "Pilih Item",
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    color: selectedItem !=
+                                                                            null
+                                                                        ? Colors
+                                                                            .blue
+                                                                            .shade800
+                                                                        : Colors
+                                                                            .grey,
+                                                                  ),
+                                                                ),
+                                                                if (selectedItem !=
+                                                                    null)
+                                                                  Container(
+                                                                    width: 30,
+                                                                    height: 30,
+                                                                    decoration:
+                                                                        BoxDecoration(
+                                                                      color: Colors
+                                                                          .red
+                                                                          .withOpacity(
+                                                                              0.2), // Transparan soft
+                                                                      shape: BoxShape
+                                                                          .circle,
+                                                                    ),
+                                                                    child:
+                                                                        IconButton(
+                                                                      icon: Icon(
+                                                                          Icons
+                                                                              .clear,
+                                                                          color: Colors
+                                                                              .red,
+                                                                          size:
+                                                                              18),
+                                                                      splashRadius:
+                                                                          18,
+                                                                      padding:
+                                                                          EdgeInsets
+                                                                              .zero,
+                                                                      constraints:
+                                                                          BoxConstraints(),
+                                                                      onPressed:
+                                                                          () {
+                                                                        setState(
+                                                                            () {
+                                                                          this.selectedItem =
+                                                                              null;
+                                                                          selectedItemCategoryId =
+                                                                              null;
+                                                                          weightController
+                                                                              .clear();
+                                                                          subTotalItem =
+                                                                              0;
+                                                                          hargaPokok =
+                                                                              0;
+                                                                        });
+                                                                        ScaffoldMessenger.of(context)
+                                                                            .showSnackBar(
+                                                                          SnackBar(
+                                                                            content:
+                                                                                Text('Kolom sudah dikosongkan!'),
+                                                                          ),
+                                                                        );
+                                                                      },
+                                                                    ),
+                                                                  ),
+                                                              ],
+                                                            );
+                                                          },
+                                                          onChanged: (value) {
+                                                            if (value != null) {
+                                                              var selected =
+                                                                  itemCategory
+                                                                      .firstWhere(
+                                                                (c) =>
+                                                                    "${c['nama']} - ${c['harga']}" ==
+                                                                    value,
+                                                                orElse: () =>
+                                                                    {},
+                                                              );
+                                                              if (selected
+                                                                  .isNotEmpty) {
+                                                                setState(() {
+                                                                  selectedItemCategoryId =
+                                                                      selected[
+                                                                              'id']
+                                                                          .toString();
+                                                                  hargaPokok =
+                                                                      int.parse(
+                                                                          selected[
+                                                                              'harga']);
+                                                                  if (weightController
+                                                                      .text
+                                                                      .isEmpty) {
+                                                                    subTotalItem =
+                                                                        0;
+                                                                  } else {
+                                                                    subTotalItem =
+                                                                        (double.parse(selected['harga']) *
+                                                                                double.parse(weightController.text))
+                                                                            .floor();
+                                                                  }
+
+                                                                  selectedItem =
+                                                                      value;
+                                                                });
+                                                              }
+                                                            } else {
+                                                              setState(() {
+                                                                selectedItemCategoryId =
+                                                                    null;
+                                                                weightController
+                                                                    .clear();
+                                                                subTotalItem =
+                                                                    0;
+                                                                hargaPokok = 0;
+                                                                selectedItem =
+                                                                    null;
+                                                              });
+                                                            }
+                                                          },
+                                                        ),
+                                                      ),
+                                                      SizedBox(width: 10),
+
+                                                      // Input Berat/Qty
+                                                      Container(
+                                                        width: 100,
+                                                        height: 50,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors.white60,
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                        child: TextField(
+                                                          controller:
+                                                              weightController,
+                                                          keyboardType:
+                                                              TextInputType
+                                                                  .numberWithOptions(
+                                                                      decimal:
+                                                                          true),
+                                                          style: GoogleFonts
+                                                              .roboto(
+                                                            fontSize: 16,
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                            color:
+                                                                Color.fromARGB(
+                                                                    255,
+                                                                    1,
+                                                                    32,
+                                                                    44),
+                                                          ),
+                                                          onChanged: (value) {
+                                                            // Validasi input untuk memastikan hanya angka yang diterima
+                                                            if (value
+                                                                .isNotEmpty) {
+                                                              if (double.tryParse(
+                                                                      value) !=
+                                                                  null) {
+                                                                double harga =
+                                                                    double.parse(
+                                                                        hargaPokok
+                                                                            .toString());
+                                                                double weight =
+                                                                    double.parse(
+                                                                        value);
+                                                                setState(() {
+                                                                  subTotalItem =
+                                                                      (harga *
+                                                                              weight)
+                                                                          .floor();
+                                                                });
+                                                              } else {
+                                                                print(
+                                                                    "Input tidak valid, hanya angka yang diperbolehkan.");
+                                                              }
+                                                            } else {
+                                                              setState(() {
+                                                                subTotalItem =
+                                                                    0;
+                                                              });
+                                                            }
+                                                          },
+                                                          decoration:
+                                                              InputDecoration(
+                                                            border:
+                                                                OutlineInputBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          8),
+                                                            ),
+                                                            labelText:
+                                                                'Berat/Qty (Kg)',
+                                                            hintText:
+                                                                'Masukkan jumlah',
+                                                            labelStyle:
+                                                                GoogleFonts
+                                                                    .roboto(
+                                                              fontSize: 13,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                            hintStyle:
+                                                                GoogleFonts
+                                                                    .roboto(
+                                                              fontSize: 13,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      SizedBox(width: 10),
+                                                      Container(
+                                                        width: 150,
+                                                        height: 50,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors.white60,
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                        child: TextField(
+                                                          enabled: false,
+                                                          keyboardType:
+                                                              TextInputType
+                                                                  .number,
+                                                          style: GoogleFonts
+                                                              .roboto(
+                                                            fontSize: 16,
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                            color:
+                                                                Color.fromARGB(
+                                                                    255,
+                                                                    1,
+                                                                    32,
+                                                                    44),
+                                                          ),
+                                                          decoration:
+                                                              InputDecoration(
+                                                            border:
+                                                                OutlineInputBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          8),
+                                                            ),
+                                                            labelText:
+                                                                "Rp. ${hargaPokok.toString()}",
+                                                            hintText:
+                                                                'Harga Satuan',
+                                                            labelStyle:
+                                                                GoogleFonts
+                                                                    .roboto(
+                                                              fontSize: 13,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                            hintStyle:
+                                                                GoogleFonts
+                                                                    .roboto(
+                                                              fontSize: 13,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      SizedBox(width: 10),
+
+                                                      // Total Harga
+                                                      Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Text(
+                                                            "Sub Total Item",
                                                             style: GoogleFonts
                                                                 .roboto(
+                                                              fontSize: 12,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                              color: Colors
+                                                                  .black54,
+                                                            ),
+                                                          ),
+                                                          Text(
+                                                            "Rp ${NumberFormat('#,###').format(subTotalItem)}",
+                                                            style: GoogleFonts
+                                                                .roboto(
+                                                              fontSize: 16,
                                                               fontWeight:
                                                                   FontWeight
                                                                       .w700,
-                                                              color: Color
-                                                                  .fromARGB(
-                                                                      255,
-                                                                      1,
-                                                                      32,
-                                                                      44),
-                                                            )),
-                                                      );
-                                                    }).toList(),
-                                                    onChanged: (value) {
-                                                      // Handle perubahan pilihan
-                                                      print("Selected: $value");
-                                                    },
-                                                    decoration: InputDecoration(
-                                                      floatingLabelBehavior:
-                                                          FloatingLabelBehavior
-                                                              .always,
-                                                      label: Text(
-                                                          "Pilihan Layanan"),
-                                                      border:
-                                                          OutlineInputBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                        borderSide: BorderSide(
-                                                            color: Colors.blue),
+                                                              color:
+                                                                  Colors.black,
+                                                            ),
+                                                          ),
+                                                        ],
                                                       ),
-                                                      enabledBorder:
-                                                          OutlineInputBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                        borderSide: BorderSide(
-                                                            color: Colors.blue),
+                                                      SizedBox(width: 60),
+                                                      ElevatedButton(
+                                                        onPressed: () {
+                                                          onAddLaundryItemPressed();
+                                                        },
+                                                        style: ElevatedButton
+                                                            .styleFrom(
+                                                          backgroundColor:
+                                                              Colors.green,
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                                  horizontal:
+                                                                      16.0,
+                                                                  vertical:
+                                                                      16.0),
+                                                          elevation: 2,
+                                                          shape:
+                                                              RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        8),
+                                                          ),
+                                                        ),
+                                                        child: Row(
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Icon(Icons.add,
+                                                                color: Colors
+                                                                    .white),
+                                                            SizedBox(width: 10),
+                                                            Text(
+                                                              "Tambah Item Laundry",
+                                                              style: TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontSize: 14,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
                                                       ),
-                                                      focusedBorder:
-                                                          OutlineInputBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                        borderSide: BorderSide(
-                                                            color: Colors.blue),
-                                                      ),
-                                                      hintText:
-                                                          "Regular / Express",
-                                                      hintStyle:
-                                                          GoogleFonts.roboto(
-                                                        fontSize: 13,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                SizedBox(
+                                                  height: 10,
+                                                ),
+
+                                                // list item yang mau dilaundry
+                                                Container(
+                                                  height: 165,
+                                                  decoration: BoxDecoration(
+                                                      color: Colors.white
+                                                          .withOpacity(0.4),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              10),
+                                                      border: Border.all(
+                                                        color: Colors.black
+                                                            .withOpacity(0.3),
+                                                      )),
+                                                  child: SingleChildScrollView(
+                                                    child: Column(
+                                                      children: [
+                                                        itemLaundry.isEmpty
+                                                            ? Padding(
+                                                                padding:
+                                                                    const EdgeInsets
+                                                                        .all(
+                                                                        10.0),
+                                                                child: Center(
+                                                                    child: Text(
+                                                                        "Belum ada item laundry")),
+                                                              )
+                                                            : Table(
+                                                                border: TableBorder
+                                                                    .symmetric(
+                                                                  inside: BorderSide(
+                                                                      width: 1,
+                                                                      color: Colors
+                                                                          .black),
+                                                                ),
+                                                                columnWidths: {
+                                                                  0: FixedColumnWidth(
+                                                                      30),
+                                                                  1: FlexColumnWidth(),
+                                                                  2: FixedColumnWidth(
+                                                                      60),
+                                                                  3: FixedColumnWidth(
+                                                                      100),
+                                                                  4: FixedColumnWidth(
+                                                                      60),
+                                                                },
+                                                                children: [
+                                                                  _buildTableRow([
+                                                                    "#",
+                                                                    "Item",
+                                                                    "Qty",
+                                                                    "Harga",
+                                                                    "Aksi"
+                                                                  ],
+                                                                      isHeader:
+                                                                          true),
+                                                                  ...itemLaundry
+                                                                      .asMap()
+                                                                      .entries
+                                                                      .map(
+                                                                          (entry) {
+                                                                    int index =
+                                                                        entry
+                                                                            .key;
+                                                                    Map<String,
+                                                                            dynamic>
+                                                                        item =
+                                                                        entry
+                                                                            .value;
+
+                                                                    return _buildTableRow([
+                                                                      (index +
+                                                                              1)
+                                                                          .toString(),
+                                                                      item[
+                                                                          'item_name'],
+                                                                      item[
+                                                                          'qty'],
+                                                                      item[
+                                                                          'total_harga_item'],
+                                                                      ElevatedButton(
+                                                                        onPressed:
+                                                                            () {},
+                                                                        child: Text(
+                                                                            "Delete"),
+                                                                      )
+                                                                    ]);
+                                                                  }).toList(),
+                                                                ],
+                                                              ),
+                                                      ],
                                                     ),
                                                   ),
                                                 )
                                               ],
                                             ),
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.end,
-                                              children: [
-                                                Text(
-                                                  'Total Tagihan',
-                                                  style: GoogleFonts.roboto(
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: Colors.grey[700],
-                                                  ),
-                                                ),
-                                                Text(
-                                                  'Rp. 56.000',
-                                                  style: GoogleFonts.roboto(
-                                                    fontSize: 22,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.black,
-                                                  ),
-                                                ),
-                                              ],
-                                            )
-                                          ]),
-                                    ),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      children: [
-                                        ElevatedButton(
-                                          onPressed: () {},
+                                          )
+                                        ],
+                                      ),
+                                      SizedBox(
+                                        height: 20,
+                                      ),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton(
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.green,
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal: 16.0,
-                                                vertical: 16.0),
+                                            backgroundColor: Color.fromARGB(
+                                                255, 68, 113, 212),
+                                            minimumSize:
+                                                Size(double.infinity, 60),
                                             elevation: 2,
                                             shape: RoundedRectangleBorder(
                                               borderRadius:
                                                   BorderRadius.circular(8),
                                             ),
                                           ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.start,
-                                            children: [
-                                              Icon(Icons.add,
-                                                  color: Colors.white),
-                                              SizedBox(width: 10),
-                                              Text(
-                                                "Tambah Item Laundry",
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+                                          onPressed: () {},
+                                          child: Text("Next"),
                                         ),
-                                        SizedBox(
-                                          height: 15,
-                                        ),
-
-                                        // ini column buat nambah item
-                                        SizedBox(
-                                          height: 165,
-                                          child: SingleChildScrollView(
-                                            child: Column(
-                                              mainAxisSize: MainAxisSize.max,
-                                              children: [
-                                                Row(
-                                                  children: [
-                                                    SizedBox(
-                                                      width: 15,
-                                                    ),
-                                                    Text(
-                                                      "1. ",
-                                                      style: TextStyle(
-                                                          fontSize: 14,
-                                                          fontWeight: FontWeight.bold),
-                                                    ),
-                                                    SizedBox(
-                                                      width: 10,
-                                                    ),
-                                                    Container(
-                                                      width: 300,
-                                                      height: 50,
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.white60,
-                                                        borderRadius:
-                                                            BorderRadius.circular(8),
-                                                      ),
-                                                      child: DropdownButtonFormField<
-                                                          String>(
-                                                        value: null,
-                                                        items: [
-                                                          "Cuci Kering",
-                                                          "Cuci Basah",
-                                                          "Setrika"
-                                                        ].map((String item) {
-                                                          return DropdownMenuItem<
-                                                              String>(
-                                                            value: item,
-                                                            child: Text(item,
-                                                                style:
-                                                                    GoogleFonts.roboto(
-                                                                  fontWeight:
-                                                                      FontWeight.w500,
-                                                                  color: Color.fromARGB(
-                                                                      255, 1, 32, 44),
-                                                                )),
-                                                          );
-                                                        }).toList(),
-                                                        onChanged: (value) {
-                                                          print("Selected: $value");
-                                                        },
-                                                        decoration: InputDecoration(
-                                                          border: OutlineInputBorder(
-                                                            borderRadius:
-                                                                BorderRadius.circular(
-                                                                    8),
-                                                          ),
-                                                          labelText: "Kategori",
-                                                          hintText: "Pilih Kategori",
-                                                          labelStyle:
-                                                              GoogleFonts.roboto(
-                                                            fontSize: 13,
-                                                            fontWeight: FontWeight.w500,
-                                                          ),
-                                                          hintStyle: GoogleFonts.roboto(
-                                                            fontSize: 13,
-                                                            fontWeight: FontWeight.w500,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    SizedBox(width: 10),
-                                                
-                                                    // Input Berat/Qty
-                                                    Container(
-                                                      width: 100,
-                                                      height: 50,
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.white60,
-                                                        borderRadius:
-                                                            BorderRadius.circular(8),
-                                                      ),
-                                                      child: TextField(
-                                                        controller: controllerBerat,
-                                                        keyboardType:
-                                                            TextInputType.number,
-                                                        style: GoogleFonts.roboto(
-                                                          fontSize: 16,
-                                                          fontWeight: FontWeight.w500,
-                                                          color: Color.fromARGB(
-                                                              255, 1, 32, 44),
-                                                        ),
-                                                        decoration: InputDecoration(
-                                                          border: OutlineInputBorder(
-                                                            borderRadius:
-                                                                BorderRadius.circular(
-                                                                    8),
-                                                          ),
-                                                          labelText: 'Berat/Qty (Kg)',
-                                                          hintText: 'Masukkan jumlah',
-                                                          labelStyle:
-                                                              GoogleFonts.roboto(
-                                                            fontSize: 13,
-                                                            fontWeight: FontWeight.w500,
-                                                          ),
-                                                          hintStyle: GoogleFonts.roboto(
-                                                            fontSize: 13,
-                                                            fontWeight: FontWeight.w500,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    SizedBox(width: 10),
-                                                    Container(
-                                                      width: 150,
-                                                      height: 50,
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.white60,
-                                                        borderRadius:
-                                                            BorderRadius.circular(8),
-                                                      ),
-                                                      child: TextField(
-                                                        controller: controllerBerat,
-                                                        enabled: false,
-                                                        keyboardType:
-                                                            TextInputType.number,
-                                                        style: GoogleFonts.roboto(
-                                                          fontSize: 16,
-                                                          fontWeight: FontWeight.w500,
-                                                          color: Color.fromARGB(
-                                                              255, 1, 32, 44),
-                                                        ),
-                                                        decoration: InputDecoration(
-                                                          border: OutlineInputBorder(
-                                                            borderRadius:
-                                                                BorderRadius.circular(
-                                                                    8),
-                                                          ),
-                                                          labelText: 'Rp 35.000',
-                                                          hintText: 'Harga Satuan',
-                                                          labelStyle:
-                                                              GoogleFonts.roboto(
-                                                            fontSize: 13,
-                                                            fontWeight: FontWeight.w500,
-                                                          ),
-                                                          hintStyle: GoogleFonts.roboto(
-                                                            fontSize: 13,
-                                                            fontWeight: FontWeight.w500,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    SizedBox(width: 20),
-                                                
-                                                    // Total Harga
-                                                    Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment.start,
-                                                      children: [
-                                                        Text(
-                                                          "Sub Total Item",
-                                                          style: GoogleFonts.roboto(
-                                                            fontSize: 12,
-                                                            fontWeight: FontWeight.w500,
-                                                            color: Colors.black54,
-                                                          ),
-                                                        ),
-                                                        Text(
-                                                          "Rp 56.000",
-                                                          style: GoogleFonts.roboto(
-                                                            fontSize: 16,
-                                                            fontWeight: FontWeight.w700,
-                                                            color: Colors.black,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ],
-                                                ),
-                                                SizedBox(height: 10,),
-                                              ],
-                                            ),
-                                          ),
-                                        )
-                                      ],
-                                    ),
-                                    SizedBox(
-                                      height: 20,
-                                    ),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor:
-                                              Color.fromARGB(255, 68, 113, 212),
-                                          minimumSize:
-                                              Size(double.infinity, 60),
-                                          elevation: 2,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                        onPressed: () {},
-                                        child: Text("Next"),
                                       ),
-                                    ),
-                                  ]),
-                            ]),
+                                    ]),
+                              ]),
+                        ),
                       ),
                     ],
                   )
@@ -671,4 +1212,22 @@ class _NewOrderState extends State<NewOrder> {
       ),
     );
   }
+}
+
+TableRow _buildTableRow(List<dynamic> cells, {bool isHeader = false}) {
+  return TableRow(
+    decoration:
+        BoxDecoration(color: isHeader ? Colors.grey[300] : Colors.transparent),
+    children: cells.map((text) {
+      String displayText = text != null ? text.toString() : '';
+      return Padding(
+        padding: EdgeInsets.all(8),
+        child: Text(
+          displayText,
+          style: TextStyle(
+              fontWeight: isHeader ? FontWeight.bold : FontWeight.normal),
+        ),
+      );
+    }).toList(),
+  );
 }

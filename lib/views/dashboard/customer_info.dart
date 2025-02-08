@@ -81,15 +81,27 @@ class _CustomerInfoState extends State<CustomerInfo> {
 
   void onNextPressed() async {
     String? customerId = selectedCustomerId;
+    String? customerName = nameController.text;
+    String? customerPhone = phoneController.text;
+
     if (isNewCustomer) {
       customerId = await createCustomer(context);
     }
-    if (customerId != null) {
+    if (customerId != null && customerId.isNotEmpty) {
       Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => NewOrder(customerId: customerId!)),
+          builder: (context) => NewOrder(
+            customerId: customerId!,
+            customerName: customerName,
+            customerPhone: customerPhone,
+          ),
+        ),
       );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Error: customerId is null or empty'),
+      ));
     }
   }
 
