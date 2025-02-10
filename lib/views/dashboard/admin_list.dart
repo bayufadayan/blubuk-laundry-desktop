@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:app_laundry_bismillah/utils/config.dart';
 import 'package:app_laundry_bismillah/views/dashboard/admin_add_new.dart';
 import 'package:app_laundry_bismillah/widgets/myappbar.dart';
 import 'package:flutter/material.dart';
@@ -33,7 +34,7 @@ class _AdminListState extends State<AdminList> {
     });
 
     final response = await http.get(
-      Uri.parse('http://localhost:8080/blubuklaundry/getAdminData.php'),
+      Uri.parse('${AppConfig.baseUrl}/getAdminData.php'),
     );
 
     // print('Response: ${response.body}');
@@ -75,7 +76,7 @@ class _AdminListState extends State<AdminList> {
 
   Future<void> updateData(int id, Map<String, String> updatedData) async {
     final response = await http.post(
-      Uri.parse('http://localhost:8080/blubuklaundry/updateAdminData.php'),
+      Uri.parse('${AppConfig.baseUrl}/updateAdminData.php'),
       body: {
         'id': id.toString(),
         ...updatedData,
@@ -95,7 +96,7 @@ class _AdminListState extends State<AdminList> {
 
   Future<void> deleteData(String id) async {
     final response = await http.post(
-      Uri.parse('http://localhost:8080/blubuklaundry/deleteAdminData.php'),
+      Uri.parse('${AppConfig.baseUrl}/deleteAdminData.php'),
       body: {'id': id},
     );
 

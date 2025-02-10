@@ -1,3 +1,6 @@
+// ignore_for_file: use_build_context_synchronously
+
+import 'package:app_laundry_bismillah/utils/config.dart';
 import 'package:app_laundry_bismillah/views/auth/login.dart';
 import 'package:app_laundry_bismillah/widgets/myfunction_button.dart';
 import 'package:flutter/material.dart';
@@ -43,7 +46,7 @@ class _RegisterState extends State<Register> {
       }
 
       final response = await http.post(
-        Uri.parse('http://localhost:8080/blubuklaundry/register.php'),
+        Uri.parse('${AppConfig.baseUrl}/register.php'),
         body: {
           'name': _nameController.text,
           'phone_number': _phoneController.text,

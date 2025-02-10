@@ -1,5 +1,6 @@
 // ignore_for_file: unused_import, prefer_const_constructors, use_build_context_synchronously
 import 'dart:convert';
+import 'package:app_laundry_bismillah/utils/config.dart';
 import 'package:app_laundry_bismillah/views/dashboard/customer_info.dart';
 import 'package:app_laundry_bismillah/views/dashboard/history.dart';
 import 'package:app_laundry_bismillah/views/dashboard/sales_receipt_success.dart';
@@ -61,7 +62,7 @@ class _NewOrderState extends State<NewOrder> {
   }
 
   // void addData() {
-  //   var url = "http://localhost:8080/blubuklaundry/adddata.php";
+  //   var url = "${AppConfig.baseUrl}/adddata.php";
 
   //   http.post(Uri.parse(url), body: {
   //     "waktu": timeController.text,
@@ -78,7 +79,7 @@ class _NewOrderState extends State<NewOrder> {
     try {
       var response = await http.post(
         Uri.parse(
-            'http://localhost:8080/blubuklaundry/addBlankTransaction.php'),
+            '${AppConfig.baseUrl}/addBlankTransaction.php'),
         body: {
           'invoice': invoice,
           'id_customer': widget.customerId,
@@ -116,7 +117,7 @@ class _NewOrderState extends State<NewOrder> {
   Future<void> fetchItemCategory() async {
     try {
       var response = await http.get(
-          Uri.parse('http://localhost:8080/blubuklaundry/getItemCategory.php'));
+          Uri.parse('${AppConfig.baseUrl}/getItemCategory.php'));
       if (response.statusCode == 200) {
         List<dynamic> data = jsonDecode(response.body);
         setState(() {
@@ -124,7 +125,7 @@ class _NewOrderState extends State<NewOrder> {
         });
       }
     } catch (e) {
-      print('Error fetching itemCategory: $e');
+      // print('Error fetching itemCategory: $e');
     }
   }
 
@@ -132,7 +133,7 @@ class _NewOrderState extends State<NewOrder> {
     try {
       var response = await http.post(
         Uri.parse(
-            'http://localhost:8080/blubuklaundry/getItemLaundrybyTransaction.php'),
+            '${AppConfig.baseUrl}/getItemLaundrybyTransaction.php'),
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
@@ -174,7 +175,7 @@ class _NewOrderState extends State<NewOrder> {
         return;
       }
       var response = await http.post(
-        Uri.parse('http://localhost:8080/blubuklaundry/addItemLaundry.php'),
+        Uri.parse('${AppConfig.baseUrl}/addItemLaundry.php'),
         body: {
           'id_customer': widget.customerId,
           'id_item_category': selectedItemCategoryId,
@@ -187,7 +188,7 @@ class _NewOrderState extends State<NewOrder> {
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
         int itemLaundryId = int.parse(data['id_item_category'].toString());
-        print("${transactionId!} + ${itemLaundryId} + ${subTotalItem}");
+        // print("${transactionId!} + ${itemLaundryId} + ${subTotalItem}");
         createTransactionDetail(transactionId!, itemLaundryId, subTotalItem);
         if (data['status'] == 'error') {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -217,7 +218,7 @@ class _NewOrderState extends State<NewOrder> {
     try {
       var response = await http.post(
         Uri.parse(
-            'http://localhost:8080/blubuklaundry/addTransactionDetail.php'),
+            '${AppConfig.baseUrl}/addTransactionDetail.php'),
         body: {
           'id_transaksi': idTransaksi.toString(),
           'id_item_laundry': idItemLaundry.toString(),
@@ -264,7 +265,7 @@ class _NewOrderState extends State<NewOrder> {
 
   Future<void> deleteItemLaundry(String id) async {
     final response = await http.post(
-      Uri.parse('http://localhost:8080/blubuklaundry/deleteItemLaundry.php'),
+      Uri.parse('${AppConfig.baseUrl}/deleteItemLaundry.php'),
       body: {'id': id},
     );
 
@@ -286,7 +287,7 @@ class _NewOrderState extends State<NewOrder> {
   Future<void> deleteTransactionDetail(String id) async {
     final response = await http.post(
       Uri.parse(
-          'http://localhost:8080/blubuklaundry/deleteTransactionDetail.php'),
+          '${AppConfig.baseUrl}/deleteTransactionDetail.php'),
       body: {'id': id},
     );
 
@@ -302,7 +303,7 @@ class _NewOrderState extends State<NewOrder> {
 
   Future<void> updateTransaction(String id, String layanan) async {
     final response = await http.post(
-      Uri.parse('http://localhost:8080/blubuklaundry/updateTransaction.php'),
+      Uri.parse('${AppConfig.baseUrl}/updateTransaction.php'),
       body: {
         'id': id,
         'layanan': layanan,
@@ -963,8 +964,8 @@ class _NewOrderState extends State<NewOrder> {
                                                                           .floor();
                                                                 });
                                                               } else {
-                                                                print(
-                                                                    "Input tidak valid, hanya angka yang diperbolehkan.");
+                                                                // print(
+                                                                //     "Input tidak valid, hanya angka yang diperbolehkan.");
                                                               }
                                                             } else {
                                                               setState(() {

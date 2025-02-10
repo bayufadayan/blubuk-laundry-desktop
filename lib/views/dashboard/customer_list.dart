@@ -1,4 +1,5 @@
 // ignore_for_file: use_build_context_synchronously
+import 'package:app_laundry_bismillah/utils/config.dart';
 import 'package:app_laundry_bismillah/views/dashboard/customer_info.dart';
 import 'package:app_laundry_bismillah/widgets/myappbar.dart';
 import 'package:flutter/material.dart';
@@ -32,7 +33,7 @@ class _CustomerListState extends State<CustomerList> {
     });
 
     final response = await http.get(
-      Uri.parse('http://localhost:8080/blubuklaundry/getCustomerData.php'),
+      Uri.parse('${AppConfig.baseUrl}/getCustomerData.php'),
     );
 
     if (response.statusCode == 200) {

@@ -1,3 +1,6 @@
+// ignore_for_file: use_build_context_synchronously
+
+import 'package:app_laundry_bismillah/utils/config.dart';
 import 'package:app_laundry_bismillah/views/auth/register.dart';
 import 'package:app_laundry_bismillah/views/dashboard/dashboard.dart';
 import 'package:app_laundry_bismillah/widgets/myfunction_button.dart';
@@ -22,7 +25,7 @@ class _LoginState extends State<Login> {
 
   Future<void> _login() async {
     final response = await http.post(
-      Uri.parse('http://localhost:8080/blubuklaundry/login.php'),
+      Uri.parse('${AppConfig.baseUrl}/login.php'),
       body: jsonEncode({
         'email': _emailController.text,
         'password': _passwordController.text,
@@ -36,7 +39,7 @@ class _LoginState extends State<Login> {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isLoggedIn', true);
       await prefs.setString('adminData', jsonEncode(responseData['admin']));
-      print(responseData);
+      // print(responseData);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:app_laundry_bismillah/views/dashboard/admin_list.dart';
 import 'package:app_laundry_bismillah/views/dashboard/customer_info.dart';
 import 'package:app_laundry_bismillah/views/dashboard/customer_list.dart';
@@ -27,7 +29,7 @@ final List<IconData> icons = [
 ];
 
 void showMessage(String message) {
-  print(message);
+  // print(message);
 }
 
 void nagigatePageTo(BuildContext context, Widget page) {

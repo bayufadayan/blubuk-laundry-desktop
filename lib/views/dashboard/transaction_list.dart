@@ -1,4 +1,5 @@
 // ignore_for_file: use_build_context_synchronously
+import 'package:app_laundry_bismillah/utils/config.dart';
 import 'package:app_laundry_bismillah/views/dashboard/customer_info.dart';
 import 'package:app_laundry_bismillah/widgets/myappbar.dart';
 import 'package:flutter/material.dart';
@@ -32,7 +33,7 @@ class _TransactionListState extends State<TransactionList> {
     });
 
     final response = await http.get(
-      Uri.parse('http://localhost:8080/blubuklaundry/getTransactionData.php'),
+      Uri.parse('${AppConfig.baseUrl}/getTransactionData.php'),
     );
 
     if (response.statusCode == 200) {
@@ -87,7 +88,7 @@ class _TransactionListState extends State<TransactionList> {
   Future<void> updateTransaction(String id, String statusBayar) async {
     final response = await http.post(
       Uri.parse(
-          'http://localhost:8080/blubuklaundry/updateTransactionPaidStatus.php'),
+          '${AppConfig.baseUrl}/updateTransactionPaidStatus.php'),
       body: {
         'id': id.toString(),
         'status_bayar': statusBayar,
@@ -114,7 +115,7 @@ class _TransactionListState extends State<TransactionList> {
       String id, String statusLaundry) async {
     final response = await http.post(
       Uri.parse(
-          'http://localhost:8080/blubuklaundry/updateTransactionLaundryStatus.php'),
+          '${AppConfig.baseUrl}/updateTransactionLaundryStatus.php'),
       body: {
         'id': id.toString(),
         'status_laundry': statusLaundry,

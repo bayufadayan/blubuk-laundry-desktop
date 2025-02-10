@@ -1,3 +1,6 @@
+// ignore_for_file: use_build_context_synchronously
+
+import 'package:app_laundry_bismillah/utils/config.dart';
 import 'package:app_laundry_bismillah/widgets/my_text_field.dart';
 import 'package:app_laundry_bismillah/widgets/myappbar.dart';
 import 'package:flutter/material.dart';
@@ -33,7 +36,7 @@ class _MyProfileState extends State<MyProfile> {
 
     if (adminJson != null) {
       Map<String, dynamic> adminData = jsonDecode(adminJson);
-      print(adminData);
+      // print(adminData);
       setState(() {
         adminId = int.parse(adminData['id'].toString());
         nameController.text = adminData['name'] ?? '';
@@ -71,7 +74,7 @@ class _MyProfileState extends State<MyProfile> {
     }
 
     final response = await http.post(
-      Uri.parse('http://localhost:8080/blubuklaundry/updateAdminData.php'),
+      Uri.parse('${AppConfig.baseUrl}/updateAdminData.php'),
       body: {
         'id': adminId.toString(),
         ...updatedData,
