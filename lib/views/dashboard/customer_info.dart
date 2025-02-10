@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_const_constructors, use_build_context_synchronously
 import 'dart:convert';
+import 'package:app_laundry_bismillah/utils/config.dart';
 import 'package:app_laundry_bismillah/views/dashboard/new_order.dart';
 import 'package:app_laundry_bismillah/widgets/myappbar.dart';
 import 'package:flutter/material.dart';
@@ -31,7 +32,7 @@ class _CustomerInfoState extends State<CustomerInfo> {
   Future<void> fetchCustomers() async {
     try {
       var response = await http.get(
-          Uri.parse('http://localhost:8080/blubuklaundry/getCustomerData.php'));
+          Uri.parse('${AppConfig.baseUrl}/getCustomerData.php'));
       if (response.statusCode == 200) {
         List<dynamic> data = jsonDecode(response.body);
         setState(() {
@@ -39,14 +40,14 @@ class _CustomerInfoState extends State<CustomerInfo> {
         });
       }
     } catch (e) {
-      print('Error fetching customers: $e');
+      // print('Error fetching customers: $e');
     }
   }
 
   Future<String?> createCustomer(BuildContext context) async {
     try {
       var response = await http.post(
-        Uri.parse('http://localhost:8080/blubuklaundry/addCustomerData.php'),
+        Uri.parse('${AppConfig.baseUrl}/addCustomerData.php'),
         body: {
           'name': nameController.text,
           'phone_number': phoneController.text,
@@ -55,7 +56,7 @@ class _CustomerInfoState extends State<CustomerInfo> {
 
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
-        print("ini data: $data");
+        // print("ini data: $data");
         if (data['status'] == 'error') {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -68,7 +69,7 @@ class _CustomerInfoState extends State<CustomerInfo> {
         return data['data']['id'].toString();
       }
     } catch (e) {
-      print('Error creating customer: $e');
+      // print('Error creating customer: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Terjadi kesalahan saat membuat customer.'),

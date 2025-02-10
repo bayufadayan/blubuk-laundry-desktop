@@ -1,3 +1,6 @@
+// ignore_for_file: use_build_context_synchronously
+
+import 'package:app_laundry_bismillah/utils/config.dart';
 import 'package:app_laundry_bismillah/views/dashboard/admin_list.dart';
 import 'package:app_laundry_bismillah/widgets/myappbar.dart';
 import 'package:app_laundry_bismillah/widgets/myfunction_button.dart';
@@ -44,7 +47,7 @@ class _AdminAddNewState extends State<AdminAddNew> {
       }
 
       final response = await http.post(
-        Uri.parse('http://localhost:8080/blubuklaundry/register.php'),
+        Uri.parse('${AppConfig.baseUrl}/register.php'),
         body: {
           'name': _nameController.text,
           'phone_number': _phoneController.text,
