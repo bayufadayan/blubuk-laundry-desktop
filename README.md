@@ -1,6 +1,6 @@
 # Blubuk Laundry Desktop v2.0
 
-Aplikasi pencatatan order untuk toko laundry berbasis **Flutter** yang menggunakan **PHP dan MySQL** sebagai database backend. Aplikasi ini kompatibel dengan **Windows Desktop x64**.
+Aplikasi pencatatan order untuk toko laundry berbasis **Flutter** yang menggunakan **PHP dan MySQL** sebagai database backend. Aplikasi ini kompatibel dengan **Windows Desktop x64**. 
 
 ## 🚀 Fitur
 1. **Order Laundry**: Melakukan order laundry sesuai kategori dan dengan kalkulasi harga otomatis serta kirim nota ke WhatsApp.
